@@ -1,11 +1,6 @@
 <template>
   <div>
-    <a-row
-      id="globalHeader"
-      class="grid-demo"
-      style="margin-bottom: 16px"
-      align="center"
-    >
+    <a-row id="globalHeader" class="grid-demo" align="center" :wrap="false">
       <a-col flex="auto">
         <a-menu
           mode="horizontal"
@@ -22,13 +17,13 @@
               <div class="title">Y OJ</div>
             </div>
           </a-menu-item>
-          <a-menu-item v-for="item in routes" :key="item.path">
+          <a-menu-item v-for="item in visibleRoutes" :key="item.path">
             {{ item.name }}
           </a-menu-item>
         </a-menu>
       </a-col>
       <a-col flex="100px">
-        <div>{{ userName ?? "未登录" }}</div>
+        <div>{{ loginUser ?? "未登录" }}</div>
       </a-col>
     </a-row>
   </div>
@@ -36,11 +31,39 @@
 
 <script setup lang="ts">
 import { routes } from "../router/routes";
-import { useRoute, useRouter } from "vue-router";
-import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { computed, ref } from "vue";
 import { useStore } from "vuex";
+import checkAccess from "@/access/checkAccess";
+import ACCESS_ENUM from "@/access/ACCESS_ENUM";
 
+// 获取所有路由
 const router = useRouter();
+// 获取当前登录用户
+const store = useStore();
+
+// 自动更新loginUser的值
+const loginUser = computed(() => {
+  return store.state.user.loginUser.userName;
+});
+
+// 筛选路由 如果hideInMenu被定义，则将其筛选掉 computed:计算属性
+const visibleRoutes = computed(() => {
+  return routes.filter((item, index) => {
+    // 过滤掉定义了hideInMenu的页面
+    if (item.meta?.hideInMenu) {
+      return false;
+    }
+    // 根据权限过滤菜单，过滤掉没有权限的页面
+    if (
+      !checkAccess(store.state.user.loginUser, item?.meta?.access as string)
+    ) {
+      return false;
+    }
+    return true;
+  });
+});
+
 // 默认主页
 const selectedKeys = ref(["/"]);
 
@@ -48,22 +71,20 @@ const selectedKeys = ref(["/"]);
 router.afterEach((to, from, failure) => {
   selectedKeys.value = [to.path];
 });
+
+// 测试用 3s后自动登录
+setTimeout(() => {
+  store.dispatch("user/getLoginUser", {
+    userName: "yiTao",
+    userRole: ACCESS_ENUM.ADMIN,
+  });
+}, 3000);
+
 const doMenuClick = (key: string) => {
   router.push({
     path: key,
   });
 };
-const store = useStore();
-console.log(store.state.user.loginUser.userName);
-const userName = ref(store.state.user.loginUser.userName);
-setTimeout(() => {
-  store
-    .dispatch("user/getLoginUser", { userName: "YiTao", role: "admin" })
-    .then(() => {
-      // 数据获取完成后更新 userName
-      userName.value = store.state.user.loginUser.userName;
-    });
-}, 3000);
 </script>
 
 <style scoped>
