@@ -112,11 +112,8 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
 import MdEditor from "@/components/MdEditor.vue";
-import {
-  QuestionAddRequest,
-  QuestionControllerService,
-  QuestionSubmitControllerService,
-} from "../../../generated";
+import { QuestionAddRequest } from "../../../generated/models/QuestionAddRequest";
+import { QuestionControllerService } from "../../../generated/services/QuestionControllerService";
 import message from "@arco-design/web-vue/es/message";
 import { useRoute } from "vue-router";
 
@@ -130,9 +127,9 @@ let form = reactive({
   answer: "",
   content: "",
   judgeConfig: {
-    memoryLimit: 999 as number,
-    stackLimit: 999 as number,
-    timeLimit: 999 as number,
+    memoryLimit: 1000,
+    stackLimit: 1000,
+    timeLimit: 1000,
   },
   judgeCase: [
     {
@@ -192,11 +189,12 @@ let form = reactive({
 const doSubmit = async () => {
   console.log(form);
   const res = await QuestionControllerService.addQuestionUsingPost(form);
-  // if (res === 0) {
-  //   message.success("提交成功");
-  // } else {
-  //   message.error("提交失败，", res.message);
-  // }
+  console.log(res);
+  if (res.code === 0) {
+    message.success("提交成功");
+  } else {
+    message.error("提交失败，" + res.message);
+  }
   // // 区分更新还是创建
   // if (updatePage) {
   //   const res = await QuestionControllerService.updateQuestionUsingPost(
